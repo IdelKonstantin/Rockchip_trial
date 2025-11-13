@@ -1,15 +1,13 @@
-#include "ballistic_daemon.h"
+#include "GPS_daemon.h"
 #include "CFastLog.h"
-#include "json_working_stuff.h"
 
 #include <iostream>
 
 gpsDaemon::gpsDaemon(const std::string inifilePath, const std::string serviceName) :  
 baseDaemon(inifilePath, serviceName) {}
 
+bool gpsDaemon::initZMQworkers() {
 /*
-bool ballisticDaemon::initZMQworkers() {
-
 	try {
 
 		auto sendAddr = std::string("tcp://*:") + m_iniParser->getString("Zeromq_pub", "port", "5434");
@@ -31,11 +29,9 @@ bool ballisticDaemon::initZMQworkers() {
 		LOG_CRIT(fastlog::LogEventType::System) << "Ошибка в инициации сокетов zmq: [" << ex.what() << "]";
 		return false;
 	}	
-
+*/
 	return true;
 }
-
-*/
 
 void gpsDaemon::statupGPSInit() {
 
@@ -43,12 +39,57 @@ void gpsDaemon::statupGPSInit() {
 	m_GPSisActive.store(startupGPSState);
 
 	LOG_INFO(fastlog::LogEventType::System) << "При запуске GPS имел статус [" 
-	<< ([startupGPSState]() {return startupGPSState ? "ВКЛ" : "ВЫКЛ";};)<< "]";
+	<< (startupGPSState ? "ВКЛ" : "ВЫКЛ") << "]";
 
 	if(m_GPSisActive.load()) {
 
-		//TODO: Подать питание на ключ
+		// TODO: Подать питание на ключ
+		// возможно еще как-то инциировать модуль AT-командами
 	}
+}
+
+void gpsDaemon::processIncomingCommand() {
+
+	LOG_INFO(fastlog::LogEventType::System) << "Инициирован поток в пулле для обработки команды ВКЛ/ВЫКЛ";
+
+	std::string incomingData;
+
+	std::vector<zmq::pollitem_t> items = {
+		
+		{static_cast<void*>(*m_zmqSUBer), 0, ZMQ_POLLIN, 0}
+	};
+
+	while(!canExit()) {
+
+		int events = zmq::poll(items.data(), items.size(), 100);
+
+		if (events > 0) {			
+			
+			if (items[0].revents & ZMQ_POLLIN) {
+				
+				incomingData = s_recv(*m_zmqSUBer);
+
+				if(incomingData == "ON") {
+
+					m_GPSisActive.store(true);
+				}
+				else if(incomingData == "OFF") {
+
+					m_GPSisActive.store(false);
+				}
+			}
+		}
+
+		sleep(0UL);
+	}	
+}
+
+void gpsDaemon::initSwithcherThread() {
+
+	m_ThreadPool.push([this](int) {
+		
+		processIncomingCommand();
+	});	
 }
 
 bool gpsDaemon::init() {
@@ -61,14 +102,14 @@ bool gpsDaemon::init() {
 
 	statupGPSInit();
 
-
-/*
 	if(!initZMQworkers()) {
 
 		LOG_CRIT(fastlog::LogEventType::System) << "Не инициированы сокеты ZMQ! Аварийное завершение";
 		return false;
 	}
-*/
+
+	initSwithcherThread();
+
 	LOG_INFO(fastlog::LogEventType::System) << "Демон для работы с GPS успешно инициирован";
 	return true;
 }

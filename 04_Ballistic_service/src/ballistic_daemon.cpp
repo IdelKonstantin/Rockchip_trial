@@ -79,7 +79,7 @@ void ballisticDaemon::run() {
 
 		int events = zmq::poll(items.data(), items.size(), 100);
 
-		if (events > 0) {			
+		if (events > 0) {
 			
 			if (items[0].revents & ZMQ_POLLIN) {
 				
