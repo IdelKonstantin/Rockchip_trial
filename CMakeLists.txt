@@ -1,0 +1,10 @@
+cmake_minimum_required(VERSION 3.7)
+
+project(Advanced_device)
+
+add_subdirectory(00_Common_stuff)
+add_subdirectory(01_Periph_config_worker)
+add_subdirectory(02_Ballistics_profiles_worker)
+add_subdirectory(03_User_profiles_worker)
+add_subdirectory(04_Ballistic_service)
+#add_subdirectory(05_GPS_service)

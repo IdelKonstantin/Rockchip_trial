@@ -1,0 +1,12 @@
+*.a
+*.so
+CMakeFiles/
+CMakeCache.txt
+*.cmake
+Makefile
+*_test
+*.sqlite
+LOGS/
+build/
+*.json
+*_daemon
