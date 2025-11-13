@@ -1,6 +1,4 @@
-#include "base_daemon.h"
-#include "json_working_stuff.h"
-#include "ballistic_daemon.h"
+#include "GPS_daemon.h"
 
 #include <unistd.h>
 #include <string>
@@ -15,12 +13,12 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    ballisticDaemon ballDi{std::string(argv[1]), std::string(argv[0])};
+    gpsDaemon gps{std::string(argv[1]), std::string(argv[0])};
 
-    if(!ballDi.init()) {
+    if(!gps.init()) {
         return 2;
     }
 
-    ballDi.run();
+    //gps.run();
     return 0;
 }

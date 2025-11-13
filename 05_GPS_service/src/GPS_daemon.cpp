@@ -4,9 +4,10 @@
 
 #include <iostream>
 
-ballisticDaemon::ballisticDaemon(const std::string inifilePath, const std::string serviceName) :  
+gpsDaemon::gpsDaemon(const std::string inifilePath, const std::string serviceName) :  
 baseDaemon(inifilePath, serviceName) {}
 
+/*
 bool ballisticDaemon::initZMQworkers() {
 
 	try {
@@ -34,7 +35,23 @@ bool ballisticDaemon::initZMQworkers() {
 	return true;
 }
 
-bool ballisticDaemon::init() {
+*/
+
+void gpsDaemon::statupGPSInit() {
+
+	bool startupGPSState = m_iniParser->getBool("GPS", "state", false);
+	m_GPSisActive.store(startupGPSState);
+
+	LOG_INFO(fastlog::LogEventType::System) << "При запуске GPS имел статус [" 
+	<< ([startupGPSState]() {return startupGPSState ? "ВКЛ" : "ВЫКЛ";};)<< "]";
+
+	if(m_GPSisActive.load()) {
+
+		//TODO: Подать питание на ключ
+	}
+}
+
+bool gpsDaemon::init() {
 
 	if(!initBaseDaemon()) {
 
@@ -42,27 +59,21 @@ bool ballisticDaemon::init() {
 		return false;
 	}
 
+	statupGPSInit();
+
+
+/*
 	if(!initZMQworkers()) {
 
 		LOG_CRIT(fastlog::LogEventType::System) << "Не инициированы сокеты ZMQ! Аварийное завершение";
 		return false;
 	}
-
-	initQueueThread();
-
-	LOG_INFO(fastlog::LogEventType::System) << "Демон по рассчету баллистики успешно инициирован";
+*/
+	LOG_INFO(fastlog::LogEventType::System) << "Демон для работы с GPS успешно инициирован";
 	return true;
 }
 
-void ballisticDaemon::initQueueThread() {
-
-	LOG_INFO(fastlog::LogEventType::System) << "Поток для очереди сообщений занят в пулле";
-
-	m_ThreadPool.push([this](int) {
-		sendResultsToSubscribers();
-	});
-}
-
+/*
 void ballisticDaemon::run() {
 
 	LOG_INFO(fastlog::LogEventType::System) << "Демон по рассчету баллистики успешно стартовал";
@@ -138,3 +149,5 @@ void ballisticDaemon::sendResultsToSubscribers() {
 		sleep(0UL);
 	}	
 }
+
+*/

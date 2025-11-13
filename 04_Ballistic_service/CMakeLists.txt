@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.7)
 project(ballistic_daemon)
 
 set(
-	compiller_options -Wall -std=c++17 -g -O0
+	compiller_options -Wall -std=c++17 #-g -O0
 )
 
 set(INC_PATH "include")

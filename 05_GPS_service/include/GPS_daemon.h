@@ -19,17 +19,20 @@ private:
 	std::shared_ptr<zmq::socket_t> m_zmqPULLer{nullptr};
 	std::shared_ptr<zmq::socket_t> m_zmqPUBer{nullptr};
 
+	std::atomic<bool> m_GPSisActive{false};
+
 private:
 
 	bool initZMQworkers();
-	void initQueueThread();
-	void sendResultsToQueue(std::string&& workingBuffer);
+	void initSwithcherThread();
 	void sendResultsToSubscribers();
 	void stopZMQ();
 
+	void statupGPSInit();
+
 public:
 
-	ballisticDaemon(const std::string inifilePath, const std::string serviceName);
+	gpsDaemon(const std::string inifilePath, const std::string serviceName);
 
 	bool init();
 	void run();

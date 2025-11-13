@@ -1,8 +1,6 @@
-#include "base_daemon.h"
 #include "json_working_stuff.h"
 #include "ballistic_daemon.h"
 
-#include <unistd.h>
 #include <string>
 #include <iostream>
 

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.7)
 
-project(ballistic_daemon)
+project(gps_daemon)
 
 set(
 	compiller_options -Wall -std=c++17 -g -O0
@@ -23,14 +23,15 @@ add_executable(${PROJECT_NAME}
 	main.cpp
 )
 
-add_executable(${PROJECT_NAME}_tester
-	${SOURCES} 
-	${HEADERS}
-	push_and_sub_client.cpp
-)
+#add_executable(${PROJECT_NAME}_tester
+#	${SOURCES} 
+#	${HEADERS}
+#	push_and_sub_client.cpp
+#)
 
 target_compile_options(${PROJECT_NAME} PRIVATE ${compiller_options})
-target_compile_options(${PROJECT_NAME}_tester PRIVATE ${compiller_options})
+
+#target_compile_options(${PROJECT_NAME}_tester PRIVATE ${compiller_options})
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
 	stdc++fs
@@ -39,9 +40,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	zmq
 )
 
-target_link_libraries(${PROJECT_NAME}_tester PUBLIC
-	stdc++fs
-	common
-	pthread
-	zmq
-)
+#target_link_libraries(${PROJECT_NAME}_tester PUBLIC
+#	stdc++fs
+#	common
+#	pthread
+#	zmq
+#)
