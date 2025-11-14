@@ -6,11 +6,15 @@
 
 ///////////////////////////////////////////////////////////////////////////////////
 //
-//	TODO list: В gpsDaemon::statupGPSInit() сделать "железную" инициацию модуля
+//	TODO list: В gpsDaemon::powerONAndStartGPSModule() сделать "железную" инициацию модуля
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
 #include <memory>
+
+///////////////////////////////////////////////////////////////////////////////////
+
+#define GPS_DATA_OUTPUT_BUFFER_SIZE 0x400
 
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -20,20 +24,22 @@ private:
 
 	zmq::context_t m_context{1};
 
-	std::shared_ptr<zmq::socket_t> m_zmqSUBer{nullptr};
+	std::shared_ptr<zmq::socket_t> m_zmqPULLer{nullptr};
 	std::shared_ptr<zmq::socket_t> m_zmqPUBer{nullptr};
 
 	std::atomic<bool> m_GPSisActive{false};
 
 private:
-
+	void powerONAndStartGPSModule();
+	void powerOFFGPSModule();
 	bool initZMQworkers();
 	void statupGPSInit();
 	void initSwithcherThread();
 
 	void processIncomingCommand();
-	void sendResultsToSubscribers();
+	void sendGPSDataToSubscribers();
 	void stopZMQ();
+	void saveGPSStateInConfig();
 
 public:
 

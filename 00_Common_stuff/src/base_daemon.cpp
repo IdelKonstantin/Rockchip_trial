@@ -9,7 +9,7 @@
 bool baseDaemon::m_canExit = true;
 
 baseDaemon::baseDaemon(const std::string inifilePath, const std::string serviceName) : 
-	m_iniParser{new INIParser()}, m_serviceName(serviceName) {
+	m_configPath(inifilePath), m_iniParser{new INIParser()}, m_serviceName(serviceName) {
 
 	signal(SIGINT, baseDaemon::signalHandler);
 	signal(SIGTERM, baseDaemon::signalHandler);
@@ -34,11 +34,9 @@ bool baseDaemon::initBaseDaemon() {
 		return false;
 	}
 
-	const std::string& configPath{"conf.ini"};
+	if(!m_iniParser->load(m_configPath)) {
 
-	if(!m_iniParser->load(configPath)) {
-
-		std::cerr << "Базовый демон [" << m_serviceName << "] не стартовал, не прочитан конфиг [" << configPath << "]" << std::endl;
+		std::cerr << "Базовый демон [" << m_serviceName << "] не стартовал, не прочитан конфиг [" << m_configPath << "]" << std::endl;
 		return false;
 	}
 

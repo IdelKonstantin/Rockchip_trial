@@ -37,6 +37,7 @@ class baseDaemon {
 protected:
 
 	std::unique_ptr<INIParser> m_iniParser{nullptr};
+	const std::string m_configPath;
 	const std::string m_serviceName;
 	threadpool::CThreadPool m_ThreadPool;
 
