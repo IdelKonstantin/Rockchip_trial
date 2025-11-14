@@ -21,6 +21,6 @@ int main(int argc, char* argv[]) {
         return 2;
     }
 
-    //gps.run();
+    gps.run();
     return 0;
 }

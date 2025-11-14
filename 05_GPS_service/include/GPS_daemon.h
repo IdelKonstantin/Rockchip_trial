@@ -3,10 +3,13 @@
 
 #include "base_daemon.h"
 #include "zhelpers.h"
+#include "GPS_worker.h"
 
 ///////////////////////////////////////////////////////////////////////////////////
 //
-//	TODO list: В gpsDaemon::powerONAndStartGPSModule() сделать "железную" инициацию модуля
+//	TODO list: 
+//	1) В gpsDaemon::powerONAndStartGPSModule() сделать "железную" инициацию модуля
+//	2) В gpsDaemon::powerOFFGPSModule() сделать отключение ключа питания 
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -27,6 +30,8 @@ private:
 	std::shared_ptr<zmq::socket_t> m_zmqPULLer{nullptr};
 	std::shared_ptr<zmq::socket_t> m_zmqPUBer{nullptr};
 
+	std::unique_ptr<GPSWorker> m_gps{nullptr};
+
 	std::atomic<bool> m_GPSisActive{false};
 
 private:
@@ -37,7 +42,7 @@ private:
 	void initSwithcherThread();
 
 	void processIncomingCommand();
-	void sendGPSDataToSubscribers();
+	void sendGPSDataToSubscribers(const std::string& GPSSerializedData);
 	void stopZMQ();
 	void saveGPSStateInConfig();
 

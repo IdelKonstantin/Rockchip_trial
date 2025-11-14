@@ -3,6 +3,20 @@
 
 #include <iostream>
 
+void gpsDaemon::powerONAndStartGPSModule() {
+		
+	// TODO: Подать питание на ключ
+	// возможно еще как-то инциировать модуль AT-командами
+
+	LOG_INFO(fastlog::LogEventType::System) << "GPS модуль включен";	
+}
+
+void gpsDaemon::powerOFFGPSModule() {
+
+	// TODO: Убрать питание с ключа
+	LOG_INFO(fastlog::LogEventType::System) << "GPS модуль выключен";	
+}
+
 gpsDaemon::gpsDaemon(const std::string inifilePath, const std::string serviceName) :  
 baseDaemon(inifilePath, serviceName) {}
 
@@ -33,15 +47,21 @@ bool gpsDaemon::initZMQworkers() {
 	return true;
 }
 
-void gpsDaemon::powerONAndStartGPSModule() {
-		
-	// TODO: Подать питание на ключ
-	// возможно еще как-то инциировать модуль AT-командами	
-}
+void gpsDaemon::stopZMQ() {
 
-void gpsDaemon::powerOFFGPSModule() {
+	if(m_zmqPUBer) {
 
-	// TODO: Убрать питание с ключа
+		m_zmqPUBer->close();
+		m_zmqPUBer.reset();
+	}
+
+	if(m_zmqPULLer) {
+
+		m_zmqPULLer->close();
+		m_zmqPULLer.reset();
+	}
+
+	m_context.close();
 }
 
 void gpsDaemon::statupGPSInit() {
@@ -57,7 +77,7 @@ void gpsDaemon::statupGPSInit() {
 		powerONAndStartGPSModule();
 	}
 	else {
-		
+
 		powerOFFGPSModule();
 	}
 }
@@ -122,6 +142,16 @@ bool gpsDaemon::init() {
 		return false;
 	}
 
+	try {
+		
+		m_gps = std::make_unique<GPSWorker>(m_iniParser->getString("GPS", "file", "/dev/ttyUSB0"));
+	}
+	catch(const std::exception& ex) {
+
+		LOG_CRIT(fastlog::LogEventType::System) << "Ошибка в файловом дескрипторе GPS. Причина: " << ex.what();
+		return false;
+	}
+
 	statupGPSInit();
 
 	if(!initZMQworkers()) {
@@ -136,36 +166,21 @@ bool gpsDaemon::init() {
 	return true;
 }
 
-/*
-void ballisticDaemon::run() {
+void gpsDaemon::run() {
 
-	LOG_INFO(fastlog::LogEventType::System) << "Демон по рассчету баллистики успешно стартовал";
-
-	std::string incomingData;
-	incomingData.reserve(BALLISTIX_WORKING_BUFFER_SIZE);
-
-	std::vector<zmq::pollitem_t> items = {
-		
-		{static_cast<void*>(*m_zmqPULLer), 0, ZMQ_POLLIN, 0}
-	};
+	LOG_INFO(fastlog::LogEventType::System) << "Демон для работы с модулем GPS успешно стартовал";
 
 	while(!canExit()) {
 
-		int events = zmq::poll(items.data(), items.size(), 100);
+		if(m_GPSisActive.load()) {
 
-		if (events > 0) {			
-			
-			if (items[0].revents & ZMQ_POLLIN) {
+			/* 
+				TODO: Воркер по работе с GPS сюда. Логика работы: 
+				 
 				
-				incomingData = s_recv(*m_zmqPULLer);
 
-				m_ThreadPool.push([this, data = std::move(incomingData)](int) {
 
-					std::string workingBuffer;
-					s2::solveBallistics(data, workingBuffer);
-					sendResultsToQueue(std::move(workingBuffer));
-				});
-			}
+			*/
 		}
 
 		sleep(0UL);
@@ -174,45 +189,7 @@ void ballisticDaemon::run() {
 	stopZMQ();
 }
 
-void ballisticDaemon::sendResultsToQueue(std::string&& workingBuffer) {
+void gpsDaemon::sendGPSDataToSubscribers(const std::string& GPSSerializedData) {
 
-	LOG_INFO(fastlog::LogEventType::System) << "Результаты расчета добавлены в очередь на отправку";
-	m_resultsQueue.push(std::move(workingBuffer));
+	s_send(*m_zmqPUBer, GPSSerializedData, ZMQ_DONTWAIT);
 }
-
-void ballisticDaemon::stopZMQ() {
-
-	if(m_zmqPUBer) {
-
-		m_zmqPUBer->close();
-		m_zmqPUBer.reset();
-	}
-
-	if(m_zmqSUBer) {
-
-		m_zmqSUBer->close();
-		m_zmqSUBer.reset();
-	}
-
-	m_context.close();
-}
-
-
-void ballisticDaemon::sendGPSDataToSubscribers() {
-
-	std::string GPSData;
-	GPSData.reserve(GPS_DATA_OUTPUT_BUFFER_SIZE);
-
-	while(!canExit()) {
-		
-		if(m_GPSBufferReady) {
-			
-
-		}
-
-		s_send(*m_zmqPUBer, GPSData, ZMQ_DONTWAIT);
-		sleep(0UL);
-	}	
-}
-
-*/
