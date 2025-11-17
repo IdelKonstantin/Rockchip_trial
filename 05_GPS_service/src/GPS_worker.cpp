@@ -64,18 +64,67 @@ size_t DataBuffer::size() const {
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 
-GPSFileReader::GPSFileReader(const std::string& path) : m_fifoPath(path), m_fd(-1) {                    /* TODO: переписать для работы с файловым дескриптором устройства а не фифо*/
+GPSFileReader::GPSFileReader(const std::string& path, int baud) : m_fdPath(path), m_fd(-1), m_baud(m_baudMap.at(baud)) {}
 
-    if (access(m_fifoPath.c_str(), F_OK) == -1) {
+bool GPSFileReader::init() {
 
-        if (mkfifo(m_fifoPath.c_str(), 0666) == -1) {
+    // 1. Открываем устройство
+    if(!openFd()) {
 
-            throw std::runtime_error("Ошибка создания FIFO: " + std::string(strerror(errno)));
-        }
-        
+        LOG_CRIT(fastlog::LogEventType::System) << "Ошибка инициации файлового дескриптора";
+        return false;
     }
 
-    LOG_INFO(fastlog::LogEventType::System) << "Дескриптор GPS открыт: " << m_fifoPath;
+    struct termios options;
+
+    // 2. Получаем текущие параметры порта
+    if (tcgetattr(m_fd, &options) != 0) {
+        
+        LOG_CRIT(fastlog::LogEventType::System) << "Ошибка получения параметров UART";
+        closeFd();
+        return false;
+    }
+
+    // 3. Устанавливаем скорость передачи
+    cfsetispeed(&options, m_baud);
+    cfsetospeed(&options, m_baud);
+
+    // 4. Настраиваем основные параметры:
+    //    8 бит данных, 1 стоп-бит, без контроля четности
+    options.c_cflag &= ~PARENB;             // Без контроля четности
+    options.c_cflag &= ~CSTOPB;             // 1 стоп-бит
+    options.c_cflag &= ~CSIZE;              // Очищаем биты размера
+    options.c_cflag |= CS8;                 // 8 бит данных
+    options.c_cflag &= ~CRTSCTS;            // Без аппаратного управления потоком
+    options.c_cflag |= (CLOCAL | CREAD);    // Локальное соединение, включаем прием
+    
+    // 5. Настраиваем входные параметры (сырой ввод)
+    options.c_iflag &= ~(IXON | IXOFF | IXANY); // Без программного управления потоком
+    options.c_iflag &= ~(INLCR | ICRNL);        // Без преобразования символов
+    
+    // 6. Настраиваем выходные параметры (сырой вывод)
+    options.c_oflag &= ~OPOST;
+    
+    // 7. Настраиваем локальные параметры
+    options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG); // Неканонический режим
+    
+    // 8. Устанавливаем таймауты
+    options.c_cc[VMIN] = 0;   // Минимальное количество символов для чтения
+    options.c_cc[VTIME] = 10; // Таймаут в десятых долях секунды (1 секунда)
+
+    // 9. Применяем настройки
+    if (tcsetattr(m_fd, TCSANOW, &options) != 0) {
+        
+        LOG_CRIT(fastlog::LogEventType::System) << "Ошибка установки параметров UART";
+        closeFd();
+        return true;
+    }
+    
+    // 10. Очищаем буферы
+    tcflush(m_fd, TCIOFLUSH);
+    
+    LOG_CRIT(fastlog::LogEventType::System) << "UART инициализирован: " << m_fdPath << ", скорость [thermios.h]: " << m_baud;
+    return true;
 }
 
 GPSFileReader::~GPSFileReader() {
@@ -83,7 +132,7 @@ GPSFileReader::~GPSFileReader() {
 }
 
 bool GPSFileReader::openFd() {
-    m_fd = open(m_fifoPath.c_str(), O_RDONLY);
+    m_fd = open(m_fdPath.c_str(), O_RDWR | O_NOCTTY);
     return m_fd != -1;
 }
 
@@ -270,47 +319,15 @@ void NMEAParser::parseNMEA(const std::string& nmea_str, GPS_data_t& gps_data) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 
-void GPSDataPrinter::print(const GPS_data_t& gps) {
-    std::cout << "\n=== GPS DATA ===" << std::endl;
-    std::cout << "Status: " << (gps.LocIsCorrect == GPS_STATUS::CORRECT ? "VALID" : "INVALID") << std::endl;
-    std::cout << "Satellites: " << gps.sats << " (" 
-              << (gps.SatIsCorrect == GPS_STATUS::CORRECT ? "VALID" : "INVALID") << ")" << std::endl;
-    
-    if (gps.LocIsCorrect == GPS_STATUS::CORRECT) {
-        std::cout << "Time: " << std::setfill('0') << std::setw(2) << gps.time.hour << ":"
-                  << std::setw(2) << gps.time.min << ":" << std::setw(2) << gps.time.sec << " UTC" << std::endl;
-        std::cout << "Date: " << std::setw(2) << gps.date.day << "." 
-                  << std::setw(2) << gps.date.month << "." << gps.date.year << std::endl;
-        
-        const char* lat_dir = (gps.latitude.direction == GPS_DIRS::NORTH) ? "N" : "S";
-        const char* lon_dir = (gps.longitude.direction == GPS_DIRS::EAST) ? "E" : "W";
-        
-        std::cout << "Latitude: " << std::setw(2) << gps.latitude.deg << "°" 
-                  << std::setw(2) << gps.latitude.min << "'" << std::setw(2) 
-                  << gps.latitude.sec << "\" " << lat_dir << std::endl;
-        std::cout << "Longitude: " << std::setw(3) << gps.longitude.deg << "°" 
-                  << std::setw(2) << gps.longitude.min << "'" << std::setw(2) 
-                  << gps.longitude.sec << "\" " << lon_dir << std::endl;
-        std::cout << "Speed: " << std::fixed << std::setprecision(1) << gps.speed << " km/h" << std::endl;
-        std::cout << "Heading: " << gps.heading.deg << "°" << std::setw(2) 
-                  << gps.heading.min << "'" << std::setw(2) << gps.heading.sec << "\"" << std::endl;
-    }
-    std::cout << "================" << std::endl << std::endl;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////
-
-GPSWorker::GPSWorker(const std::string& Fd_path) : file_reader(Fd_path) {}
+GPSWorker::GPSWorker(const std::string& Fd_path, int baud) : file_reader(Fd_path, baud) {}
 
 bool GPSWorker::initialize() {
     
-    if (!file_reader.openFd()) {
-        
-        LOG_CRIT(fastlog::LogEventType::System) << "Ошибка открытия FIFO: " << strerror(errno);
+    if (!file_reader.init()) {
         return false;
     }
     
-    LOG_INFO(fastlog::LogEventType::System) << "FIFO открыт для чтения, ожидаю данные...";
+    LOG_INFO(fastlog::LogEventType::System) << "Файл открыт для чтения, ожидаю данные...";
     return true;
 }
 
@@ -345,9 +362,7 @@ void GPSWorker::cleanup() {
 void GPSWorker::processLine(const std::string& line) {
 
     // Проверяем что это NMEA сообщение (начинается с $)
-    
     if (!line.empty() && line[0] == '$') {
-        // Парсим NMEA сообщение
 
         memset(&m_GPSdata, 0, sizeof(GPS_data_t));
         nmea_parser.parseNMEA(line, m_GPSdata);
@@ -405,3 +420,35 @@ const std::string& GPSSerializer::serializeResult(const GPS_data_t& data) {
 
     return m_resultJson;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+
+void GPSDataPrinter::print(const GPS_data_t& gps) {
+    std::cout << "\n=== GPS DATA ===" << std::endl;
+    std::cout << "Status: " << (gps.LocIsCorrect == GPS_STATUS::CORRECT ? "VALID" : "INVALID") << std::endl;
+    std::cout << "Satellites: " << gps.sats << " (" 
+              << (gps.SatIsCorrect == GPS_STATUS::CORRECT ? "VALID" : "INVALID") << ")" << std::endl;
+    
+    if (gps.LocIsCorrect == GPS_STATUS::CORRECT) {
+        std::cout << "Time: " << std::setfill('0') << std::setw(2) << gps.time.hour << ":"
+                  << std::setw(2) << gps.time.min << ":" << std::setw(2) << gps.time.sec << " UTC" << std::endl;
+        std::cout << "Date: " << std::setw(2) << gps.date.day << "." 
+                  << std::setw(2) << gps.date.month << "." << gps.date.year << std::endl;
+        
+        const char* lat_dir = (gps.latitude.direction == GPS_DIRS::NORTH) ? "N" : "S";
+        const char* lon_dir = (gps.longitude.direction == GPS_DIRS::EAST) ? "E" : "W";
+        
+        std::cout << "Latitude: " << std::setw(2) << gps.latitude.deg << "°" 
+                  << std::setw(2) << gps.latitude.min << "'" << std::setw(2) 
+                  << gps.latitude.sec << "\" " << lat_dir << std::endl;
+        std::cout << "Longitude: " << std::setw(3) << gps.longitude.deg << "°" 
+                  << std::setw(2) << gps.longitude.min << "'" << std::setw(2) 
+                  << gps.longitude.sec << "\" " << lon_dir << std::endl;
+        std::cout << "Speed: " << std::fixed << std::setprecision(1) << gps.speed << " km/h" << std::endl;
+        std::cout << "Heading: " << gps.heading.deg << "°" << std::setw(2) 
+                  << gps.heading.min << "'" << std::setw(2) << gps.heading.sec << "\"" << std::endl;
+    }
+    std::cout << "================" << std::endl << std::endl;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////

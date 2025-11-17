@@ -5,6 +5,7 @@
 #include <string>
 #include <cstddef>
 #include <vector>
+#include <termios.h>
 
 #include "nlohmann.h"
 
@@ -88,18 +89,31 @@ class GPSFileReader {
 
 private:
 
-    std::string m_fifoPath; // TODO: 
+    const std::map<int, int> m_baudMap = {
+        
+        {4800, B4800},
+        {9600, B9600},
+        {19200, B19200},
+        {38400, B38400},
+        {57600, B57600},
+        {115200, B115200},
+    };
+
+    std::string m_fdPath;
     int m_fd;
+    int m_baud;
 
 public:
 
-    GPSFileReader(const std::string& path);  
+    GPSFileReader(const std::string& path, int baud);  
     ~GPSFileReader();
     
     bool openFd();
     void closeFd();
     int readData(char* buffer, size_t size);
     bool isOpen() const;
+
+    bool init();
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -159,12 +173,12 @@ private:
 
 public:
 
-    GPSWorker(const std::string& Fd_path);
+    GPSWorker(const std::string& Fd_path, int baud);
     bool initialize();
     void processData();
     void cleanup();
     const std::string& serializeResult(const GPS_data_t& data);
-    
+
     const GPS_data_t& getGPSData() const;
 
 private:

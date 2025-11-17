@@ -144,7 +144,7 @@ bool gpsDaemon::init() {
 
 	try {
 		
-		m_gps = std::make_unique<GPSWorker>(m_iniParser->getString("GPS", "file", "/dev/ttyUSB0"));
+		m_gps = std::make_unique<GPSWorker>(m_iniParser->getString("GPS", "file", "/dev/ttyUSB0"), m_iniParser->getInt("GPS", "baud", 38400));
 
 		if(!m_gps->initialize()) {
 

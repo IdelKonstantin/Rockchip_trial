@@ -87,8 +87,6 @@ void getFromDaemon() {	/* Получение результатов */
 
 	std::string clientMessage;
 
-	int i = 1;
-
 	while(true) {
 
 		int events = zmq::poll(items.data(), items.size(), 100);
@@ -98,12 +96,10 @@ void getFromDaemon() {	/* Получение результатов */
 			if (items[0].revents & ZMQ_POLLIN) {
 				
 				clientMessage = s_recv(*suber);
-				std::cerr << i++ << std::endl;
-				//std::cerr << "Сообщение получено:\n" << clientMessage << std::endl;
+				std::cerr << "Сообщение получено:\n" << clientMessage << std::endl;
 			}			
 		}
 
-		i++;
 		sleep(0UL);
 	}
 }
