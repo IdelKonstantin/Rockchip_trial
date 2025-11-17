@@ -145,6 +145,15 @@ bool gpsDaemon::init() {
 	try {
 		
 		m_gps = std::make_unique<GPSWorker>(m_iniParser->getString("GPS", "file", "/dev/ttyUSB0"));
+
+		if(!m_gps->initialize()) {
+
+			LOG_CRIT(fastlog::LogEventType::System) << "Ошибка в файловом дескрипторе GPS";
+			return false;
+		}
+
+		LOG_INFO(fastlog::LogEventType::System) << "Файловый дескриптор для работы с GPS открыт";
+
 	}
 	catch(const std::exception& ex) {
 
@@ -174,18 +183,15 @@ void gpsDaemon::run() {
 
 		if(m_GPSisActive.load()) {
 
-			/* 
-				TODO: Воркер по работе с GPS сюда. Логика работы: 
-				 
-				
-
-
-			*/
+			m_gps->processData();	
+			auto result = m_gps->serializeResult(m_gps->getGPSData());
+			s_send(*m_zmqPUBer, result, ZMQ_DONTWAIT);
 		}
 
 		sleep(0UL);
 	}
 
+	m_gps->cleanup();
 	stopZMQ();
 }
 

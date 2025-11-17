@@ -437,6 +437,9 @@ int main() {
         worker.initialize();
         
         while (keep_running) {
+
+            std::cout << "*******" << std::endl;
+
             worker.processData();
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }

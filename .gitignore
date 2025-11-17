@@ -10,3 +10,4 @@ LOGS/
 build/
 *.json
 *_daemon
+*_tester

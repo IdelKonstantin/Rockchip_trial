@@ -65,13 +65,17 @@ size_t DataBuffer::size() const {
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 GPSFileReader::GPSFileReader(const std::string& path) : m_fifoPath(path), m_fd(-1) {                    /* TODO: переписать для работы с файловым дескриптором устройства а не фифо*/
-    // Создаем FIFO если не существует
+
     if (access(m_fifoPath.c_str(), F_OK) == -1) {
+
         if (mkfifo(m_fifoPath.c_str(), 0666) == -1) {
+
             throw std::runtime_error("Ошибка создания FIFO: " + std::string(strerror(errno)));
         }
-        std::cout << "FIFO создан: " << m_fifoPath << std::endl;
+        
     }
+
+    LOG_INFO(fastlog::LogEventType::System) << "Дескриптор GPS открыт: " << m_fifoPath;
 }
 
 GPSFileReader::~GPSFileReader() {
@@ -298,42 +302,106 @@ void GPSDataPrinter::print(const GPS_data_t& gps) {
 
 GPSWorker::GPSWorker(const std::string& Fd_path) : file_reader(Fd_path) {}
 
-void GPSWorker::processData() {
+bool GPSWorker::initialize() {
     
     if (!file_reader.openFd()) {
-        std::cerr << "Ошибка открытия FIFO: " << strerror(errno) << std::endl;
-        return;
+        
+        LOG_CRIT(fastlog::LogEventType::System) << "Ошибка открытия FIFO: " << strerror(errno);
+        return false;
     }
+    
+    LOG_INFO(fastlog::LogEventType::System) << "FIFO открыт для чтения, ожидаю данные...";
+    return true;
+}
+
+void GPSWorker::processData() {
     
     char read_buffer[NMEA_READER_BUFFER_SIZE];
     int bytes_read = file_reader.readData(read_buffer, NMEA_READER_BUFFER_SIZE);
     
     if (bytes_read > 0) {
+
         read_buffer[bytes_read] = '\0';
+        LOG_INFO(fastlog::LogEventType::System) << "Получено " << bytes_read << " байт данных";
         
-        // Добавляем данные в буфер
         data_buffer.append(read_buffer, bytes_read);
         
-        // Извлекаем и обрабатываем полные строки
         auto lines = data_buffer.extractLines();
         for (const auto& line : lines) {
             processLine(line);
         }
+    } else if (bytes_read == -1) {
+
+        LOG_INFO(fastlog::LogEventType::System) << "Ошибка чтения из FIFO: " << strerror(errno);
     }
-    
-    file_reader.closeFd();
 }
 
 void GPSWorker::cleanup() {
+    
     file_reader.closeFd();
-    std::cout << "GPS Worker завершил работу." << std::endl;
+    LOG_INFO(fastlog::LogEventType::System) << "GPS Worker завершил работу.";
 }
 
 void GPSWorker::processLine(const std::string& line) {
+
     // Проверяем что это NMEA сообщение (начинается с $)
+    
     if (!line.empty() && line[0] == '$') {
         // Парсим NMEA сообщение
-        GPS_data_t gps_data;
-        nmea_parser.parseNMEA(line, gps_data);
+
+        memset(&m_GPSdata, 0, sizeof(GPS_data_t));
+        nmea_parser.parseNMEA(line, m_GPSdata);
     }
+}
+
+const std::string& GPSWorker::serializeResult(const GPS_data_t& data) {
+
+    return json_serializer.serializeResult(data);
+}
+
+
+const GPS_data_t& GPSWorker::getGPSData() const {
+
+    return m_GPSdata;
+}
+
+GPSSerializer::GPSSerializer() {
+
+    m_resultJson.reserve(JSON_GPS_RESULT_SIZE);
+}
+
+const std::string& GPSSerializer::serializeResult(const GPS_data_t& data) {
+
+    m_resultJson.clear();
+    m_responceJson = nlohmann::json();
+
+    m_responceJson["Loc.correct"] = (data.LocIsCorrect == GPS_STATUS::CORRECT);
+    m_responceJson["Sat.correct"] = (data.SatIsCorrect == GPS_STATUS::CORRECT);
+
+    m_responceJson["Location"]["Latitude"]["deg."] = data.latitude.deg;
+    m_responceJson["Location"]["Latitude"]["min."] = data.latitude.min;
+    m_responceJson["Location"]["Latitude"]["sec."] = data.latitude.sec;
+
+    m_responceJson["Location"]["longitude"]["deg."] = data.longitude.deg;
+    m_responceJson["Location"]["longitude"]["min."] = data.longitude.min;
+    m_responceJson["Location"]["longitude"]["sec."] = data.longitude.sec;
+
+    m_responceJson["Heading"]["deg."] = data.heading.deg;
+    m_responceJson["Heading"]["min."] = data.heading.min;
+    m_responceJson["Heading"]["sec."] = data.heading.sec;
+
+    m_responceJson["Date"]["year"] = data.date.year;
+    m_responceJson["Date"]["month"] = data.date.month;
+    m_responceJson["Date"]["day"] = data.date.day;
+
+    m_responceJson["Time"]["hour"] = data.time.hour;
+    m_responceJson["Time"]["min"] = data.time.min;
+    m_responceJson["Time"]["sec"] = data.time.sec;
+
+    m_responceJson["Sats"] = data.sats;
+    m_responceJson["Speed"] = data.speed;
+
+    m_resultJson = m_responceJson.dump(4);
+
+    return m_resultJson;
 }

@@ -6,6 +6,8 @@
 #include <cstddef>
 #include <vector>
 
+#include "nlohmann.h"
+
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 enum class GPS_DIRS {
@@ -60,6 +62,7 @@ struct GPS_data_t {
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 const uint16_t NMEA_READER_BUFFER_SIZE = 1024;
+const uint16_t JSON_GPS_RESULT_SIZE = 1024;
 
 class DataBuffer {
 
@@ -128,6 +131,20 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 
+class GPSSerializer {
+
+private:
+
+    std::string m_resultJson;
+    nlohmann::json m_responceJson;
+
+public:
+
+    GPSSerializer();
+    const std::string& serializeResult(const GPS_data_t& data);
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////
 
 class GPSWorker {
 
@@ -136,12 +153,19 @@ private:
     GPSFileReader file_reader;
     DataBuffer data_buffer;
     NMEAParser nmea_parser;
+    GPSSerializer json_serializer;
+
+    GPS_data_t m_GPSdata;
 
 public:
 
     GPSWorker(const std::string& Fd_path);
+    bool initialize();
     void processData();
     void cleanup();
+    const std::string& serializeResult(const GPS_data_t& data);
+    
+    const GPS_data_t& getGPSData() const;
 
 private:
 
