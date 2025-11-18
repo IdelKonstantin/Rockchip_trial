@@ -388,7 +388,7 @@ GPSSerializer::GPSSerializer() {
 const std::string& GPSSerializer::serializeResult(const GPS_data_t& data) {
 
     m_resultJson.clear();
-    m_responceJson = nlohmann::json();
+    m_responceJson.clear();
 
     m_responceJson["Loc.correct"] = (data.LocIsCorrect == GPS_STATUS::CORRECT);
     m_responceJson["Sat.correct"] = (data.SatIsCorrect == GPS_STATUS::CORRECT);
