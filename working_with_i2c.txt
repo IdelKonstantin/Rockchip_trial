@@ -1,0 +1,6 @@
+# Ищем файлы device tree
+find /sys/firmware/devicetree -name "*i2c*" | head -10
+
+# Смотрим доступные I2C адаптеры
+ls /dev/i2c-*
+i2cdetect -l
