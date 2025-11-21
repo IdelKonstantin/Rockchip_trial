@@ -1,6 +1,8 @@
 #ifndef _I_IMU_SENSOR_H_
 #define _I_IMU_SENSOR_H_
 
+#include <string>
+
 namespace IMU {
 
 	using accel_t = float;
@@ -30,9 +32,9 @@ namespace IMU {
 
 	struct IMUData {
 
-		accels acceleration;
-		gyros gyroscope;
-		angles angle;
+		Acceleration acceleration;
+		Gyroscope gyroscope;
+		Angles angle;
 	};
 
 	using data = IMUData;

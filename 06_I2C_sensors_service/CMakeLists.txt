@@ -13,6 +13,10 @@ file(GLOB HEADERS ${INC_PATH}/*.h)
 file(GLOB SOURCES ${SRC_PATH}/*.cpp)
 
 include_directories(${INC_PATH})
+include_directories(${INC_PATH}/imu/)
+include_directories(${INC_PATH}/lux/)
+include_directories(${INC_PATH}/proxy/)
+include_directories(${INC_PATH}/meteo/)
 include_directories(../00_Common_stuff/include/)
 
 link_directories(${PROJECT_NAME} ../00_Common_stuff)
