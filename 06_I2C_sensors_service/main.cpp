@@ -1,23 +1,27 @@
-#include "meteo_sensor_fabrique.h"
-#include "light_sensor_fabrique.h"
-#include "proxy_sensor_fabrique.h"
-#include "imu_sensor_fabrique.h"
-
+#include <unistd.h>
+#include <string>
 #include <iostream>
 
-int main() {
+#include "I2C_daemon.h"
 
-	auto meteoSensor = meteoSensorFabrique{}.produceSensor(meteo::sensor_type::BME680, "/dev/i2c-1", 0x76);
-	std::cout << "Meteo sensor used: " << meteoSensor->whoAmI() << std::endl;
+int main(int argc, char* argv[]) {
 
-	auto lightSensor = lightSensorFabrique{}.produceSensor(light::sensor_type::APDS9300, "/dev/i2c-1", 0x39);
-	std::cout << "Light sensor used: " << lightSensor->whoAmI() << std::endl;
+/*
+    if(argc < 2) {
 
-	auto proxySensor = proxySensorFabrique{}.produceSensor(proxy::sensor_type::APDS9960, "/dev/i2c-1", 0x4A);
-	std::cout << "Proxy sensor used: " << proxySensor->whoAmI() << std::endl;
+        std::cerr << "Не задан путь к файлу конфига. Использование:" << std::endl;
+        std::cerr << argv[0] << " <путь к конфигу *.ini>" << std::endl;
+        return 1;
+    }
 
-	auto imuSensor = imuSensorFabrique{}.produceSensor(IMU::sensor_type::ICM20948, "/dev/i2c-1", 0x86);
-	std::cout << "IMU sensor used: " << imuSensor->whoAmI() << std::endl;
+	i2cDaemon i2cDi{std::string(argv[1]), std::string(argv[0])};
+*/
+	i2cDaemon i2cDi{"conf.ini", "i2c_daemon"};
 
+	if(!i2cDi.init()) {
+		return 2;
+	}
+
+	i2cDi.run();
 	return 0;
 }

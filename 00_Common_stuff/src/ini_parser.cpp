@@ -233,7 +233,7 @@ bool INIParser::parseLine(const std::string& line, std::string& section,
     return false;
 }
 
-int hexStringToIntSstream(const std::string& hexStr) {
+int INIParser::hexStringToIntSstream(const std::string& hexStr) {
 
     std::stringstream ss;
     int value;

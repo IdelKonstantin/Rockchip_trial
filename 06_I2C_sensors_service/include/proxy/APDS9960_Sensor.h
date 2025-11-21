@@ -93,8 +93,7 @@ private:
     void updateProximityStatus();
 
 public:
-    APDS9960_Sensor(const std::string& i2c_device = "/dev/i2c-1", 
-                   uint8_t address = APDS9960_I2C_ADDR);
+    APDS9960_Sensor(const std::string& i2c_device = "/dev/i2c-1", uint8_t address = APDS9960_I2C_ADDR);
     virtual ~APDS9960_Sensor();
 
     virtual bool init() override;

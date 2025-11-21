@@ -84,8 +84,7 @@ private:
     bool setupLightSensor();
 
 public:
-    APDS9930_Sensor(const std::string& i2c_device = "/dev/i2c-1", 
-                   uint8_t address = APDS9930_I2C_ADDR);
+    APDS9930_Sensor(const std::string& i2c_device = "/dev/i2c-1", uint8_t address = APDS9930_I2C_ADDR);
     virtual ~APDS9930_Sensor();
 
     virtual bool init() override;
