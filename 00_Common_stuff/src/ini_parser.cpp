@@ -1,5 +1,7 @@
 #include "ini_parser.h"
 
+#include <sstream>
+
 bool INIParser::load(const std::string& filename) {
     std::ifstream file(filename);
     if (!file.is_open()) {
@@ -229,4 +231,19 @@ bool INIParser::parseLine(const std::string& line, std::string& section,
     }
     
     return false;
+}
+
+int hexStringToIntSstream(const std::string& hexStr) {
+
+    std::stringstream ss;
+    int value;
+    
+    ss << std::hex << hexStr;
+    ss >> value;
+    
+    if (ss.fail()) {
+        throw std::invalid_argument("Invalid HEX string: " + hexStr);
+    }
+    
+    return value;
 }

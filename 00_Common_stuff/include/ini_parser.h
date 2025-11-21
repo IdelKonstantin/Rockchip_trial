@@ -48,6 +48,9 @@ public:
     // Очистить все данные
     void clear();
 
+    // Преобразование строки с HEX с число
+    static int hexStringToIntSstream(const std::string& hexStr);
+
 private:
     // Структура для хранения данных: [секция -> [ключ -> значение]]
     std::unordered_map<std::string, std::unordered_map<std::string, std::string>> data_;
