@@ -11,3 +11,7 @@ build/
 *.json
 *_daemon
 *_tester
+*.jpeg
+*.jpg
+*.png
+plugin_main

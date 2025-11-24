@@ -6,7 +6,6 @@
 
 int main(int argc, char* argv[]) {
 
-/*
     if(argc < 2) {
 
         std::cerr << "Не задан путь к файлу конфига. Использование:" << std::endl;
@@ -15,8 +14,8 @@ int main(int argc, char* argv[]) {
     }
 
 	i2cDaemon i2cDi{std::string(argv[1]), std::string(argv[0])};
-*/
-	i2cDaemon i2cDi{"conf.ini", "i2c_daemon"};
+
+	//i2cDaemon i2cDi{"conf.ini", "i2c_daemon"};
 
 	if(!i2cDi.init()) {
 		return 2;

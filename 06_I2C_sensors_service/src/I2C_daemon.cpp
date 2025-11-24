@@ -8,7 +8,7 @@
 
 #include <iostream>
 
-i2cDaemon::i2cDaemon(const std::string inifilePath, const std::string serviceName) :  
+i2cDaemon::i2cDaemon(const std::string inifilePath, const std::string serviceName) : 
 baseDaemon(inifilePath, serviceName) {}
 
 bool i2cDaemon::initZMQworkers() {
@@ -191,7 +191,7 @@ void i2cDaemon::run() {
 }
 
 void i2cDaemon::sendDataToSubscribers(const std::string& serializedData) {
-	
+
 	s_send(*m_zmqPUBer, serializedData, ZMQ_DONTWAIT);
 }
 

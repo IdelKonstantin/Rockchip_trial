@@ -25,7 +25,7 @@ int main () {
 
 	/* Сокет для входящих сообщений для демона по расчету баллистики */
 
-	auto subAddr = std::string("tcp://") + iniParser.getString("Zeromq_pub", "host", "localhost") 
+	auto subAddr = std::string("tcp://") + iniParser.getString("Zeromq_pub", "host", "localhost")
 	+ std::string(":") + iniParser.getString("Zeromq_pub", "port", "5437");
 
 	suber = std::make_shared<zmq::socket_t>(context, ZMQ_SUB);
