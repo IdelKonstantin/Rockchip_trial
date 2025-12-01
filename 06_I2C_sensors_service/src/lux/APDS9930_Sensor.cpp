@@ -187,7 +187,7 @@ bool APDS9930_Sensor::init() {
         i2c_fd = -1;
         return false;
     }
-
+/*
     // Проверяем ID датчика
     uint8_t id = readByte(APDS9930_ID);
     if (id != APDS9930_ID_VALUE) {
@@ -195,7 +195,7 @@ bool APDS9930_Sensor::init() {
         i2c_fd = -1;
         return false;
     }
-
+*/
     // Выключаем все функции для чистой настройки
     if (!writeByte(APDS9930_ENABLE, 0x00)) {
         close(i2c_fd);
